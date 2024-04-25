@@ -5,6 +5,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema } from "@/schemas";
+import { useSearchParams } from "next/navigation";
 
 import {
   Form,
@@ -24,6 +25,13 @@ import { login } from "@/actions/login";
 import { setDefaultAutoSelectFamily } from "net";
 
 export const LoginForm = () => {
+  const searchParams = useSearchParams();
+  const [urlError, setUrlError] = useState(
+    searchParams.get("error") === "OAuthAccountNotLinked"
+      ? "Email already used with another provider"
+      : ""
+  );
+
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
@@ -39,16 +47,13 @@ export const LoginForm = () => {
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
     setError("");
     setSuccess("");
+    setUrlError("");
 
     startTransition(() => {
       login(values).then((data) => {
-        if (data?.error) {
-          setError(data.error);
-        }
-
-        if (data?.success) {
-          setSuccess(data.success);
-        }
+        setError(data?.error);
+        // TODO
+        // setSuccess(data?.success);
       });
     });
   };
@@ -101,7 +106,7 @@ export const LoginForm = () => {
               )}
             />
           </div>
-          <FormError message={error} />
+          <FormError message={error || urlError} />
           <FormSuccess message={success} />
           <Button type="submit" className="w-full" disabled={isPending}>
             Login
